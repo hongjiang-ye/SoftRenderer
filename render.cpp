@@ -2,6 +2,7 @@
 #include <cmath>
 #include <iostream>
 #include <fstream>
+#include <chrono>
 #include <vector>
 using std::cout;
 using std::endl;
@@ -18,7 +19,7 @@ std::pair<SR::Scene, SR::PinholeCamera> pinhole_setting1(size_t supersampling_fa
 {
     /* Settings for Pinhole Camera */
     size_t image_height;
-    image_height = 360;
+    image_height = 60;
     //image_height = 60;
     double aspect_ratio = 16.0 / 9.0;
     size_t image_width = static_cast<size_t>(std::round(image_height * aspect_ratio));
@@ -52,7 +53,7 @@ std::pair<SR::Scene, SR::PinholeCamera> pinhole_setting1(size_t supersampling_fa
 std::pair<SR::Scene, SR::ThinLensCamera> thinlens_setting1(size_t supersampling_factor)
 {
     /* Settings for ThinLens Camera 1 */
-    size_t image_height = 60;  // resolution (xxP)
+    size_t image_height = 180;  // resolution (xxP)
     size_t render_height = image_height * supersampling_factor;
 
     double sensor_width = 36;  // in unit mm, for convenience
@@ -95,13 +96,13 @@ std::pair<SR::Scene, SR::ThinLensCamera> thinlens_setting1(size_t supersampling_
 std::pair<SR::Scene, SR::ThinLensCamera> thinlens_setting2(size_t supersampling_factor)
 {
     /* Settings for ThinLens Camera 2 */
-    size_t image_height = 30;  // resolution (xxP)
+    size_t image_height = 540;  // resolution (xxP)
     size_t render_height = image_height * supersampling_factor;
 
     double sensor_width = 36;  // in unit mm, for convenience
     double sensor_height = 24;
     double focal_length = 35;  // in unit mm
-    double aperture_F_num = 1.6;  // F-Number
+    double aperture_F_num = 16;  // F-Number
 
     SR::Vector3d eye = { 13,2,3 };
     SR::Vector3d lookat = { 0, 0, 0 };
@@ -118,21 +119,21 @@ std::pair<SR::Scene, SR::ThinLensCamera> thinlens_setting2(size_t supersampling_
     auto material_ground = std::make_shared<SR::Lambertian>(SR::Vector3d{ 0.5, 0.5, 0.5 });
     scene.add_object(std::make_shared<SR::Sphere>(SR::Vector3d{ 0.0, -1000.0, 0.0 }, 1000.0, material_ground));
 
-    for (int a = -5; a < 5; a++) {
-        for (int b = -5; b < 5; b++) {
+    for (int a = -11; a < 11; a++) {
+        for (int b = -11; b < 11; b++) {
             auto choose_mat = SR::Random::rand_uniform();
             SR::Vector3d center = { a + 0.9 * SR::Random::rand_uniform(), 0.2, b + 0.9 * SR::Random::rand_uniform() };
 
             if ((center - SR::Vector3d{ 4, 0.2, 0 }).norm() > 0.9) {
                 std::shared_ptr<SR::Material> sphere_material;
 
-                if (choose_mat < 0.8) {
+                if (choose_mat < 0.5) {
                     // diffuse
                     auto albedo = SR::elementwise_multiply(SR::rand_vec3_on_unit_sphere(), SR::rand_vec3_on_unit_sphere());
                     sphere_material = std::make_shared<SR::Lambertian>(albedo);
                     scene.add_object(std::make_shared<SR::Sphere>(center, 0.2, sphere_material));
                 }
-                else if (choose_mat < 0.95) {
+                else if (choose_mat < 0.75) {
                     // metal
                     SR::Vector3d albedo = { SR::Random::rand_uniform(0, 1) , SR::Random::rand_uniform(0, 1) , SR::Random::rand_uniform(0, 1) };
                     auto fuzz = SR::Random::rand_uniform(0, 1) / 2;
@@ -164,6 +165,7 @@ std::pair<SR::Scene, SR::ThinLensCamera> thinlens_setting2(size_t supersampling_
 
 int main()
 {
+    double a = 0.0;
     size_t max_bounces = 10;
     size_t samples_per_pixel = 40;
     SR::PathTracer renderer(max_bounces, samples_per_pixel);
@@ -174,8 +176,18 @@ int main()
     auto scene_camera = thinlens_setting1(supersampling_factor);
     //auto scene_camera = thinlens_setting2(supersampling_factor);
 
+    scene_camera.first.build_bvh();
+
     /* Start rendering */
+    std::cout << "Start rendering..." << std::endl;
+    auto t_start = std::chrono::steady_clock::now();
+
     std::shared_ptr<SR::Image> supersampled_image_ptr = renderer.render(scene_camera.first, scene_camera.second);
+
+    auto t_end = std::chrono::steady_clock::now();
+    std::cout << "Rendering is done in "
+        << std::chrono::duration<double>(t_end - t_start).count()
+        << " seconds." << std::endl;
 
     // Downsampling
     // super_sampled_image_ptr ->gaussian_blur();  // smoothing

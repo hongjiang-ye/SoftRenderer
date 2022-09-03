@@ -11,7 +11,6 @@
 
 namespace SR
 {
-    // Color range is in [0, 1]
     using Color = Vector3d;
 
     // Canvas coordinate: origin is the bottom left corner; 

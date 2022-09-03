@@ -488,7 +488,8 @@ namespace SR
 	}
 	
 	/* Math utils */
-	const double DOUBLE_INFINITY = std::numeric_limits<double>::infinity();
+	const double DOUBLE_POS_INFINITY = std::numeric_limits<double>::infinity();
+	const double DOUBLE_NEG_INFINITY = -std::numeric_limits<double>::infinity();
 	const double EPS = 1e-4;
 
 	/* Random number generation */

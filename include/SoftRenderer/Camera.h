@@ -14,7 +14,7 @@ namespace SR
 	class Camera {
 	public:
 
-		Camera(const Vector3d& eye, const Vector3d& lookat, const Vector3d& up,
+		Camera(const Point3& eye, const Vector3& lookat, const Vector3& up,
 			size_t image_width, size_t image_height)
 			: eye(eye), lookat(lookat), direction((lookat - eye).normalized()), up(up.normalized()),
 			image_width(image_width), image_height(image_height)
@@ -28,7 +28,7 @@ namespace SR
 		}
 
 		// Generate a ray (which may be sampled from a random distribution) that originates from the target pixel.
-		virtual Ray generate_ray(const Vector2d& pixel_coord) const = 0;
+		virtual Ray generate_ray(const Point2& pixel_coord) const = 0;
 
 		size_t get_image_width() const
 		{
@@ -51,15 +51,15 @@ namespace SR
 
 	protected:
 		// Camera position and orientation
-		Vector3d eye;  // camera position
-		Vector3d lookat;
-		Vector3d direction;  // look at direction
-		Vector3d up;
+		Point3 eye;  // camera position
+		Point3 lookat;
+		Vector3 direction;  // look at direction
+		Vector3 up;
 
 		// Camera coordinate
-		Vector3d cam_x;
-		Vector3d cam_y;
-		Vector3d cam_z;
+		Vector3 cam_x;
+		Vector3 cam_y;
+		Vector3 cam_z;
 
 		// The image properties
 		size_t image_width;
@@ -70,7 +70,7 @@ namespace SR
 
 	class PinholeCamera : public Camera {
 	public:
-		PinholeCamera(const Vector3d& eye, const Vector3d& lookat, const Vector3d& up,
+		PinholeCamera(const Point3& eye, const Vector3& lookat, const Vector3& up,
 			size_t image_width, size_t image_height, double fov_y, double sensor_plane_dist = 1.0f)
 			: Camera(eye, lookat, up, image_width, image_height), fov_y(fov_y), sensor_plane_dist(sensor_plane_dist)
 		{
@@ -78,7 +78,7 @@ namespace SR
 			sensor_width = aspect_ratio * sensor_height;
 		}
 
-		Ray generate_ray(const Vector2d& pixel_coord) const override
+		Ray generate_ray(const Point2& pixel_coord) const override
 		{
 			// Randomly sample a point inside the pixel
 			double Px = pixel_coord.x() + 0.5 * Random::rand_uniform();
@@ -93,7 +93,7 @@ namespace SR
 			double Vy = Py / image_height * sensor_height;
 
 			// Sample a offset point on lens
-			Vector3d dir = (Vx * cam_x + Vy * cam_y + sensor_plane_dist * direction).normalized();
+			Vector3 dir = (Vx * cam_x + Vy * cam_y + sensor_plane_dist * direction).normalized();
 			return Ray(eye, dir);
 		}
 
@@ -127,7 +127,7 @@ namespace SR
 
 	class ThinLensCamera : public Camera {
 	public:
-		ThinLensCamera(const Vector3d& eye, const Vector3d& lookat, const Vector3d& up,
+		ThinLensCamera(const Point3& eye, const Vector3& lookat, const Vector3& up,
 			double sensor_width, double sensor_height, size_t image_height,
 			double focal_length, double aperture_F_num, double focal_plane_dist)
 			: Camera(eye, lookat, up, 0, image_height), sensor_width(sensor_width), sensor_height(sensor_height), 
@@ -146,7 +146,7 @@ namespace SR
 			fov_x = std::atan(sensor_width / sensor_plane_dist / 2) * 2;
 		}
 
-		Ray generate_ray(const Vector2d& pixel_coord) const override
+		Ray generate_ray(const Point2& pixel_coord) const override
 		{
 			// Randomly sample a point inside the pixel
 			double Px = pixel_coord.x() + 0.5 * Random::rand_uniform();
@@ -160,15 +160,16 @@ namespace SR
 			double Vx = Px / image_width * (sensor_width * focal_plane_dist / sensor_plane_dist);
 			double Vy = Py / image_height * (sensor_height * focal_plane_dist / sensor_plane_dist);
 
-			// Sample a offset point on lens
-			Vector2d rand_p = aperture_d / 2 * rand_vec2_in_unit_circle();  // [-r, r]
-			Vector3d Lp = rand_p.x() * cam_x + rand_p.y() * cam_y;
+			// Sample a offseted point on lens
+			Point2 rand_p = aperture_d / 2 * rand_vec2_in_unit_circle();  // [-r, r]
+			Point3 Lp = rand_p.x() * cam_x + rand_p.y() * cam_y;
 
+			// Trace from the offseted point on lens to the viewport pixel.
 			// All unit in mm, and normalization removes the scale
-			Vector3d dir = (Vx * cam_x + Vy * cam_y + focal_plane_dist * direction - Lp).normalized();
+			Vector3 dir = (Vx * cam_x + Vy * cam_y + focal_plane_dist * direction - Lp).normalized();
 			
 			// Now have to scale to unit in cm, to be consistent with the object position
-			Vector3d Lp_cm = Lp / 10;
+			Point3 Lp_cm = Lp / 10;
 			return Ray(eye + Lp_cm, dir);
 		}
 
@@ -214,7 +215,7 @@ namespace SR
 		double pixel_size;
 		double sensor_plane_dist;
 
-		// The image's properties
+		/* The image's properties */
 		double fov_y;  // in radian
 		double fov_x;  // in radian
 	};

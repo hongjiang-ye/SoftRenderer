@@ -1,5 +1,4 @@
 #pragma once
-#include <chrono>
 #include <memory>
 
 #include "SoftRenderer/Material.h"
@@ -10,8 +9,6 @@
 
 namespace SR
 {
-
-
 	// Abstract class for renderers.
 	class Renderer {
 	public:
@@ -91,9 +88,6 @@ namespace SR
 
 			std::shared_ptr<Image> image_ptr = std::make_shared<Image>(width, height);
 
-			std::cout << "Start rendering..." << std::endl;
-			auto t_start = std::chrono::steady_clock::now();
-
 			for (int j = 1; j <= height; j++) {
 
 				// Print the progress
@@ -116,11 +110,6 @@ namespace SR
 				}
 			}
 			std::cout << std::endl;
-
-			auto t_end = std::chrono::steady_clock::now();
-			std::cout << "Rendering is done in "
-				<< std::chrono::duration<double>(t_end - t_start).count()
-				<< " seconds." << std::endl;
 
 			return image_ptr;
 		}

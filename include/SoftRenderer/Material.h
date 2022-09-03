@@ -1,7 +1,7 @@
 #pragma once
-
 #include "SoftRenderer/Math.h"
 #include "SoftRenderer/Geometry.h"
+#include "SoftRenderer/Image.h"
 
 
 namespace SR
@@ -9,37 +9,40 @@ namespace SR
 
 	class Material {
     public:
-        // Try to sample a scattered ray (either reflected or refracted) with its attenuation.
-        virtual std::tuple<bool, Ray, Vector3d> generate_scatter_ray(const Ray& ray_in) const = 0;
+        // Return information about a sampled scattered ray (either reflected or refracted).
+        // tuple[0]: whether a scattered direction is sampled
+        // tuple[1]: the scattered ray
+        // tuple[2]: the color attenuation of the scattered ray
+        virtual std::tuple<bool, Ray, Color> generate_scatter_ray(const Ray& ray_in) const = 0;
 	};
 
 
     // Ideal lambertian (with ideal diffusion)
     class Lambertian : public Material {
     public:
-        Lambertian(const Vector3d& albedo) : albedo(albedo) {}
+        Lambertian(const Color& albedo) : albedo(albedo) {}
 
-        virtual std::tuple<bool, Ray, Vector3d> generate_scatter_ray(const Ray& ray_in) const override
+        virtual std::tuple<bool, Ray, Color> generate_scatter_ray(const Ray& ray_in) const override
         {
             // Sample a reflected ray
-            Vector3d reflected_dir = ray_in.get_hit_normal() + rand_vec3_on_unit_sphere();
+            Vector3 reflected_dir = ray_in.get_hit_normal() + rand_vec3_on_unit_sphere();
             Ray scattered_ray = Ray(ray_in.get_hit_point(), reflected_dir);
 
             return std::make_tuple(true, scattered_ray, albedo);
         }
 
-        Vector3d albedo;
+        Color albedo;
     };
 
     // Fuzzy metal (perfect reflection with a bit fuzziness)
     class Metal : public Material {
     public:
-        Metal(const Vector3d& albedo, double fuzziness) : albedo(albedo), fuzziness(fuzziness) {}
+        Metal(const Color& albedo, double fuzziness) : albedo(albedo), fuzziness(fuzziness) {}
 
-        virtual std::tuple<bool, Ray, Vector3d> generate_scatter_ray(const Ray& ray_in) const override
+        virtual std::tuple<bool, Ray, Color> generate_scatter_ray(const Ray& ray_in) const override
         {
             // Sample a reflected ray
-            Vector3d reflected_dir = reflect_dir(ray_in.direction, ray_in.get_hit_normal()) 
+            Vector3 reflected_dir = reflect_dir(ray_in.direction, ray_in.get_hit_normal()) 
                 + fuzziness * rand_vec3_on_unit_sphere();
 
             Ray scattered_ray = Ray(ray_in.get_hit_point(), reflected_dir);
@@ -53,7 +56,7 @@ namespace SR
             return std::make_tuple(valid, scattered_ray, albedo);
         }
 
-        Vector3d albedo;
+        Color albedo;
         double fuzziness;
     };
 
@@ -62,10 +65,10 @@ namespace SR
     public:
         Dielectric(double ior) : ior(ior) {}
 
-        virtual std::tuple<bool, Ray, Vector3d> generate_scatter_ray(const Ray& ray_in) const override
+        virtual std::tuple<bool, Ray, Color> generate_scatter_ray(const Ray& ray_in) const override
         {
-            Vector3d albedo = { 1, 1, 1 };  // Don't absorb any light
-            Vector3d scattered_dir;
+            Color albedo = { 1, 1, 1 };  // Don't absorb any light
+            Vector3 scattered_dir;
 
             double ior_in, ior_out;
             if (ray_in.is_hit_front_face()) {
@@ -76,8 +79,7 @@ namespace SR
                 ior_in = ior;
                 ior_out = 1.0;
             }
-            std::tuple<bool, Vector3d, double> refracted_ray_tuple = refracted_dir(ray_in.direction, ray_in.get_hit_normal(), 
-                ior_in, ior_out);
+            auto refracted_ray_tuple = refracted_dir(ray_in.direction, ray_in.get_hit_normal(), ior_in, ior_out);
 
             if (std::get<0>(refracted_ray_tuple) && Random::rand_uniform(0, 1) > std::get<2>(refracted_ray_tuple)) {
                 // Has valid sampled refraction ray, and decide to use it
