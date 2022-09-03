@@ -258,6 +258,7 @@ namespace SR
             if (end - start == 1) {  // base case
                 object_ptr = object_ptrs[start];
                 aabb = object_ptr->aabb;
+                //cout << aabb << endl;
             }
             else {  // recursive case
                 std::sort(object_ptrs.begin() + start, object_ptrs.begin() + end,
@@ -273,6 +274,7 @@ namespace SR
                 right = std::make_shared<BVH_Node>(object_ptrs, mid, end, next_axis_i);
 
                 aabb = AABoundingBox::merge(left->aabb, right->aabb);
+                //cout << aabb << endl;
             }
         }
 

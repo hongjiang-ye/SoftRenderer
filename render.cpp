@@ -19,7 +19,7 @@ std::pair<SR::Scene, SR::PinholeCamera> pinhole_setting1(size_t supersampling_fa
 {
     /* Settings for Pinhole Camera */
     size_t image_height;
-    image_height = 60;
+    image_height = 720;
     //image_height = 60;
     double aspect_ratio = 16.0 / 9.0;
     size_t image_width = static_cast<size_t>(std::round(image_height * aspect_ratio));
@@ -96,7 +96,7 @@ std::pair<SR::Scene, SR::ThinLensCamera> thinlens_setting1(size_t supersampling_
 std::pair<SR::Scene, SR::ThinLensCamera> thinlens_setting2(size_t supersampling_factor)
 {
     /* Settings for ThinLens Camera 2 */
-    size_t image_height = 540;  // resolution (xxP)
+    size_t image_height = 720;  // resolution (xxP)
     size_t render_height = image_height * supersampling_factor;
 
     double sensor_width = 36;  // in unit mm, for convenience
@@ -104,7 +104,7 @@ std::pair<SR::Scene, SR::ThinLensCamera> thinlens_setting2(size_t supersampling_
     double focal_length = 35;  // in unit mm
     double aperture_F_num = 16;  // F-Number
 
-    SR::Vector3d eye = { 13,2,3 };
+    SR::Vector3d eye = { 13, 2, 3 };
     SR::Vector3d lookat = { 0, 0, 0 };
     double focal_plane_dist = 100;  // in unit mm; the desired depth of object
 
@@ -121,22 +121,22 @@ std::pair<SR::Scene, SR::ThinLensCamera> thinlens_setting2(size_t supersampling_
 
     for (int a = -11; a < 11; a++) {
         for (int b = -11; b < 11; b++) {
-            auto choose_mat = SR::Random::rand_uniform();
-            SR::Vector3d center = { a + 0.9 * SR::Random::rand_uniform(), 0.2, b + 0.9 * SR::Random::rand_uniform() };
+            auto choose_mat = SR::Random::rand_uniform(0, 1);
+            SR::Vector3d center = { a + 0.9 * SR::Random::rand_uniform(0, 1), 0.2, b + 0.9 * SR::Random::rand_uniform(0, 1) };
 
             if ((center - SR::Vector3d{ 4, 0.2, 0 }).norm() > 0.9) {
                 std::shared_ptr<SR::Material> sphere_material;
 
-                if (choose_mat < 0.5) {
+                if (choose_mat < 0.6) {
                     // diffuse
                     auto albedo = SR::elementwise_multiply(SR::rand_vec3_on_unit_sphere(), SR::rand_vec3_on_unit_sphere());
                     sphere_material = std::make_shared<SR::Lambertian>(albedo);
                     scene.add_object(std::make_shared<SR::Sphere>(center, 0.2, sphere_material));
                 }
-                else if (choose_mat < 0.75) {
+                else if (choose_mat < 0.85) {
                     // metal
-                    SR::Vector3d albedo = { SR::Random::rand_uniform(0, 1) , SR::Random::rand_uniform(0, 1) , SR::Random::rand_uniform(0, 1) };
-                    auto fuzz = SR::Random::rand_uniform(0, 1) / 2;
+                    SR::Vector3d albedo = { SR::Random::rand_uniform(0.5, 1) , SR::Random::rand_uniform(0.5, 1) , SR::Random::rand_uniform(0.5, 1) };
+                    auto fuzz = SR::Random::rand_uniform(0, 0.5);
                     sphere_material = std::make_shared<SR::Metal>(albedo, fuzz);
                     scene.add_object(std::make_shared<SR::Sphere>(center, 0.2, sphere_material));
 
@@ -173,8 +173,8 @@ int main()
     size_t supersampling_factor = 2;  // factor x factor subpixels
 
     //auto scene_camera = pinhole_setting1(supersampling_factor);
-    auto scene_camera = thinlens_setting1(supersampling_factor);
-    //auto scene_camera = thinlens_setting2(supersampling_factor);
+    //auto scene_camera = thinlens_setting1(supersampling_factor);
+    auto scene_camera = thinlens_setting2(supersampling_factor);
 
     scene_camera.first.build_bvh();
 
