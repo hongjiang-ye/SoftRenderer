@@ -6,9 +6,8 @@
 
 namespace SR
 {
-
-	class Material {
-    public:
+    // Determine the ray scattering behaviour.
+	struct Material {
         // Return information about a sampled scattered ray (either reflected or refracted).
         // tuple[0]: whether a scattered direction is sampled
         // tuple[1]: the scattered ray
@@ -17,10 +16,43 @@ namespace SR
 	};
 
 
+    // Determine the color (light attenuation) at a specific point of the material.
+    struct Texture {
+        virtual Color sample_color(Point2 text_coord) const = 0;
+    };
+
+    struct SolidColor : Texture {
+        SolidColor(Color albedo) : albedo(albedo) {}
+
+        Color sample_color(Point2 text_coord) const override
+        {
+            return albedo;
+        }
+
+        Color albedo;
+    };
+
+    struct ImageTexture : Texture {
+        ImageTexture(const std::string& filename)
+        {
+            image_ptr = Image::load_ppm(filename);
+        }
+
+        Color sample_color(Point2 text_coord) const override
+        {
+            size_t x = static_cast<size_t>(text_coord.x() * image_ptr->get_width());
+            size_t y = static_cast<size_t>(text_coord.y() * image_ptr->get_height());
+            return image_ptr->get_pixel(x, y);
+        }
+
+        std::shared_ptr<Image> image_ptr;
+    };
+
+
     // Ideal lambertian (with ideal diffusion)
-    class Lambertian : public Material {
-    public:
-        Lambertian(const Color& albedo) : albedo(albedo) {}
+    struct Lambertian : Material {
+        Lambertian(const Color& albedo) : albedo(std::make_shared<SolidColor>(albedo)) {}
+        Lambertian(const std::shared_ptr<Texture>& albedo) : albedo(albedo) {}
 
         virtual std::tuple<bool, Ray, Color> generate_scatter_ray(const Ray& ray_in) const override
         {
@@ -28,15 +60,14 @@ namespace SR
             Vector3 reflected_dir = ray_in.get_hit_normal() + rand_vec3_on_unit_sphere();
             Ray scattered_ray = Ray(ray_in.get_hit_point(), reflected_dir);
 
-            return std::make_tuple(true, scattered_ray, albedo);
+            return std::make_tuple(true, scattered_ray, albedo->sample_color(ray_in.get_hit_textcoord()));
         }
 
-        Color albedo;
+        std::shared_ptr<Texture> albedo;
     };
 
     // Fuzzy metal (perfect reflection with a bit fuzziness)
-    class Metal : public Material {
-    public:
+    struct Metal : Material {
         Metal(const Color& albedo, double fuzziness) : albedo(albedo), fuzziness(fuzziness) {}
 
         virtual std::tuple<bool, Ray, Color> generate_scatter_ray(const Ray& ray_in) const override
@@ -61,8 +92,8 @@ namespace SR
     };
 
     // Dielectric material with reflection and refraction
-    class Dielectric : public Material {
-    public:
+    struct Dielectric : Material {
+ 
         Dielectric(double ior) : ior(ior) {}
 
         virtual std::tuple<bool, Ray, Color> generate_scatter_ray(const Ray& ray_in) const override

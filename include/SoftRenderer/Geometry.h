@@ -68,7 +68,7 @@ namespace SR
     /* Geometry objects */
 
     // Forward declaration
-    class Material;
+    struct Material;
 
     class Ray {
     public:
@@ -156,6 +156,16 @@ namespace SR
         std::shared_ptr<Material> get_hit_material() const
         {
             return hit.material_ptr;
+        }
+
+        void set_hit_textcoord(Point2 uv)
+        {
+            hit.texture_coord = uv;
+        }
+
+        const Point2 get_hit_textcoord() const
+        {
+            return hit.texture_coord;
         }
 
         const Point3 origin;
@@ -320,6 +330,17 @@ namespace SR
             aabb.max_point = center + Vector3d{ radius, radius, radius };
         }
 
+        // Compute the texture coordinate based on the hit point on the surface
+        Point2 get_textcoord(Point3 point)
+        {
+            Vector3 unit_dir = (point - center).normalized();
+
+            double theta = std::acos(-unit_dir.y());
+            double phi = std::atan2(-unit_dir.z(), unit_dir.x()) + PI;
+
+            return Point2{ phi / (2 * PI), theta / PI };  // map to [0, 1]
+        }
+
         bool intersect(Ray& ray, double tmin) override
         {
             Vector3 oc = ray.origin - center;
@@ -351,7 +372,9 @@ namespace SR
             // Has valid intersection
             ray.set_hit_t(t_intersect);
             ray.set_hit_normal((ray.get_hit_point() - center).normalized());
-            ray.set_hit_material(this->material_ptr);
+            ray.set_hit_material(material_ptr);
+            ray.set_hit_textcoord(this->get_textcoord(ray.get_hit_point()));
+
 
             return true;
         }

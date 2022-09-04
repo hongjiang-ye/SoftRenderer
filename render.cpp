@@ -19,7 +19,7 @@ std::pair<SR::Scene, SR::PinholeCamera> pinhole_setting1(size_t supersampling_fa
 {
     /* Settings for Pinhole Camera */
     size_t image_height;
-    image_height = 720;
+    image_height = 180;
     //image_height = 60;
     double aspect_ratio = 16.0 / 9.0;
     size_t image_width = static_cast<size_t>(std::round(image_height * aspect_ratio));
@@ -163,6 +163,42 @@ std::pair<SR::Scene, SR::ThinLensCamera> thinlens_setting2(size_t supersampling_
 }
 
 
+std::pair<SR::Scene, SR::PinholeCamera> texture_setting(size_t supersampling_factor)
+{
+    /* Settings for Pinhole Camera */
+    size_t image_height;
+    image_height = 540;
+    //image_height = 60;
+    double aspect_ratio = 16.0 / 9.0;
+    size_t image_width = static_cast<size_t>(std::round(image_height * aspect_ratio));
+
+    size_t render_height = image_height * supersampling_factor;
+    size_t render_width = image_width * supersampling_factor;
+
+    double fov_y = 45;
+    SR::PinholeCamera camera(
+        { -1, 1, -2 }, { 0, 0, -1 }, { 0, 1, 0 },
+        render_width, render_height, SR::get_radian(fov_y)
+    );
+    camera.print();
+
+    SR::Scene scene;
+
+    auto earth_texture = std::make_shared<SR::ImageTexture>("assets/earthmap.ppm");
+
+    auto material_ground = std::make_shared<SR::Lambertian>(SR::Vector3d{ 0.8, 0.8, 0.0 });
+    auto material_center = std::make_shared<SR::Lambertian>(earth_texture);
+    //auto material_left = std::make_shared<SR::Dielectric>(1.5);
+    //auto material_right = std::make_shared<SR::Metal>(SR::Vector3d{ 0.8, 0.6, 0.2 }, 0.5);
+
+    scene.add_object(std::make_shared<SR::Sphere>(SR::Vector3d{ 0.0, -100.5, -1.0 }, 100.0, material_ground));  // ground
+    scene.add_object(std::make_shared<SR::Sphere>(SR::Vector3d{ 0.0, 0.0, -1.0 }, 0.5, material_center));
+    //scene.add_object(std::make_shared<SR::Sphere>(SR::Vector3d{ -1.0, 0.0, -1.0 }, 0.5, material_left));
+    //scene.add_object(std::make_shared<SR::Sphere>(SR::Vector3d{ 1.0, 0.0, -1.0 }, 0.5, material_right));
+
+    return std::make_pair(scene, camera);
+}
+
 int main()
 {
     double a = 0.0;
@@ -174,7 +210,8 @@ int main()
 
     //auto scene_camera = pinhole_setting1(supersampling_factor);
     //auto scene_camera = thinlens_setting1(supersampling_factor);
-    auto scene_camera = thinlens_setting2(supersampling_factor);
+    //auto scene_camera = thinlens_setting2(supersampling_factor);
+    auto scene_camera = texture_setting(supersampling_factor);
 
     scene_camera.first.build_bvh();
 
@@ -190,10 +227,9 @@ int main()
         << " seconds." << std::endl;
 
     // Downsampling
-    // super_sampled_image_ptr ->gaussian_blur();  // smoothing
     std::shared_ptr<SR::Image> image_ptr = supersampled_image_ptr->downsample(supersampling_factor);
 
-    image_ptr->save("./test.ppm");
+    image_ptr->save_ppm("./test.ppm");
 
     return 0;
 }

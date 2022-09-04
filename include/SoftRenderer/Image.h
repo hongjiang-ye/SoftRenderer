@@ -82,13 +82,91 @@ namespace SR
             return downsampled_image_ptr;
         }
 
-        //void gaussian_blur()
-        //{
+        void gaussian_blur()
+        {
+            // 3x3 kernel
+            const double K[5] = { 0.1201, 0.2339, 0.2931, 0.2339, 0.1201 };
 
-        //}
+            Image hori_blurred_image(*this);
+
+            int i_width = static_cast<int>(width);
+            int i_height = static_cast<int>(height);
+
+            for (int i = 0; i < i_width; i++) {
+                for (int j = 0; j < i_height; j++) {
+                    Color color;
+                    color += K[0] * this->get_pixel(i, std::max(0, j - 2));
+                    color += K[1] * this->get_pixel(i, std::max(0, j - 1));
+                    color += K[2] * this->get_pixel(i, j);
+                    color += K[3] * this->get_pixel(i, std::min(i_height - 1, j + 1));
+                    color += K[4] * this->get_pixel(i, std::min(i_height - 1, j + 2));
+                    hori_blurred_image.set_pixel(i, j, color);
+                }
+            }
+
+            Image vert_blurred_image(hori_blurred_image);
+
+            for (int i = 0; i < i_width; i++) {
+                for (int j = 0; j < i_height; j++) {
+                    Color color;
+                    color += K[0] * hori_blurred_image.get_pixel(std::max(0, i - 2), j);
+                    color += K[1] * hori_blurred_image.get_pixel(std::max(0, i - 1), j);
+                    color += K[2] * hori_blurred_image.get_pixel(i, j);
+                    color += K[3] * hori_blurred_image.get_pixel(std::min(i_width - 1, i + 1), j);
+                    color += K[4] * hori_blurred_image.get_pixel(std::min(i_width - 1, i + 2), j);
+                    vert_blurred_image.set_pixel(i, j, color);
+                }
+            }
+
+            *this = vert_blurred_image;
+        }
+
+        static std::shared_ptr<Image> load_ppm(std::string filename)
+        {
+            assert(filename.substr(filename.size() - 4, 4) == ".ppm");
+
+            std::ifstream file1(filename, std::ios::binary);
+
+            // Process ascii header
+            size_t width = 0;
+            size_t height = 0;
+
+            std::string line;
+            std::getline(file1, line);
+            assert(line == "P6");
+
+            std::getline(file1, line);
+
+            std::istringstream iss(line);
+            iss >> width >> height;
+
+            std::getline(file1, line);
+            assert(line == "255");
+            
+            // Read pixel colors
+            std::shared_ptr<Image> image_ptr = std::make_shared<Image>(width, height);
+
+            for (int y = static_cast<int>(height) - 1; y >= 0; y--) {
+                for (int x = 0; x < static_cast<int>(width); x++) {
+                    char r, g, b;
+                    file1.get(r);
+                    file1.get(g);
+                    file1.get(b);
+                    
+                    Color color{ reinterpret_cast<unsigned char&>(r) / 255.0,
+                        reinterpret_cast<unsigned char&>(g) / 255.0, 
+                        reinterpret_cast<unsigned char&>(b) / 255.0};
+                    image_ptr->set_pixel(x, y, color);
+                }
+            }
+
+            file1.close();
+
+            return image_ptr;
+        }
 
         // Save the image in .PPM format.
-        void save(std::string filename) const
+        void save_ppm(std::string filename) const
         {   
             std::cout << "Writing image to file " << filename << "..." << std::endl;
             auto t_start = std::chrono::steady_clock::now();
@@ -104,7 +182,6 @@ namespace SR
                         // with gamma correction
                         double val = std::clamp(std::sqrt(this->get_pixel(i, j).at(k)), 0.0, 1.0);
                         
-                        //double val = std::clamp(this->get_pixel(i, j).at(k), 0.0, 1.0);
                         ofs << static_cast<char>(255 * val);
                     }
                 }
