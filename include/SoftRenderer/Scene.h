@@ -5,6 +5,7 @@
 #include "SoftRenderer/Geometry.h"
 #include "SoftRenderer/Math.h"
 
+
 namespace SR
 {
 	// Stores all objects, lightings in the world.

@@ -8,11 +8,15 @@ namespace SR
 {
     // Determine the ray scattering behaviour.
 	struct Material {
+        
         // Return information about a sampled scattered ray (either reflected or refracted).
         // tuple[0]: whether a scattered direction is sampled
         // tuple[1]: the scattered ray
         // tuple[2]: the color attenuation of the scattered ray
         virtual std::tuple<bool, Ray, Color> generate_scatter_ray(const Ray& ray_in) const = 0;
+
+        // The self-emittance light
+        virtual Color get_emittance(const Ray& ray_in) const = 0;
 	};
 
 
@@ -51,8 +55,12 @@ namespace SR
 
     // Ideal lambertian (with ideal diffusion)
     struct Lambertian : Material {
-        Lambertian(const Color& albedo) : albedo(std::make_shared<SolidColor>(albedo)) {}
-        Lambertian(const std::shared_ptr<Texture>& albedo) : albedo(albedo) {}
+
+        Lambertian(const Color& albedo, const Color& emittance = Color()) 
+            : albedo(std::make_shared<SolidColor>(albedo)), emittance(emittance) {}
+
+        Lambertian(const std::shared_ptr<Texture>& albedo, const Color& emittance = Color()) 
+            : albedo(albedo), emittance(emittance) {}
 
         virtual std::tuple<bool, Ray, Color> generate_scatter_ray(const Ray& ray_in) const override
         {
@@ -63,8 +71,15 @@ namespace SR
             return std::make_tuple(true, scattered_ray, albedo->sample_color(ray_in.get_hit_textcoord()));
         }
 
+        Color get_emittance(const Ray& ray_in) const override
+        {
+            return emittance;
+        }
+
         std::shared_ptr<Texture> albedo;
+        Color emittance;
     };
+
 
     // Fuzzy metal (perfect reflection with a bit fuzziness)
     struct Metal : Material {
@@ -85,6 +100,11 @@ namespace SR
             }
 
             return std::make_tuple(valid, scattered_ray, albedo);
+        }
+
+        Color get_emittance(const Ray& ray_in) const override
+        {
+            return Color();
         }
 
         Color albedo;
@@ -124,7 +144,34 @@ namespace SR
             return std::make_tuple(true, Ray(ray_in.get_hit_point(), scattered_dir), albedo);
         }
 
+        Color get_emittance(const Ray& ray_in) const override
+        {
+            return Color();
+        }
+
         double ior;  // index of refraction
     };
 
+
+    //// Emit light into all directions
+    //struct DiffuseLight : Material {
+
+    //    DiffuseLight(const Color& emittance) : emittance(emittance) {}
+
+    //    virtual std::tuple<bool, Ray, Color> generate_scatter_ray(const Ray& ray_in) const override
+    //    {
+    //        // Sample a reflected ray
+    //        Vector3 reflected_dir = ray_in.get_hit_normal() + rand_vec3_on_unit_sphere();
+    //        Ray scattered_ray = Ray(ray_in.get_hit_point(), reflected_dir);
+
+    //        return std::make_tuple(true, scattered_ray, albedo->sample_color(ray_in.get_hit_textcoord()));
+    //    }
+
+    //    Color get_emittance() const override
+    //    {
+    //        return emittance;
+    //    }
+
+    //    Color emittance;
+    //};
 }

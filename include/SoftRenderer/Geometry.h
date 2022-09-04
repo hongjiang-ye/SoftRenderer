@@ -176,6 +176,7 @@ namespace SR
     };
 
 
+    // TODO: Make an abstract BoundingVolume class;
     struct AABoundingBox {
 
         AABoundingBox()
@@ -185,8 +186,8 @@ namespace SR
             max_point = Point3{ DOUBLE_POS_INFINITY, DOUBLE_POS_INFINITY , DOUBLE_POS_INFINITY };
         }
 
-        AABoundingBox(const Point3& bottom_left_point, const Point3& top_right_point)
-            : min_point(bottom_left_point), max_point(top_right_point)
+        AABoundingBox(const Point3& min_point, const Point3& max_point)
+            : min_point(min_point), max_point(max_point)
         {}
 
         bool intersect(const Ray& ray) const
@@ -242,6 +243,7 @@ namespace SR
     };
 
 
+    // TODO: Make an abstract Renderable class that contains a object3d object;
     // Base class for 3D primitives
     struct Object3D {
 
@@ -384,6 +386,128 @@ namespace SR
     };
 
 
-    
+    class Triangle : public Object3D {
+    public:
 
+        Triangle() = delete;
+
+        // With counterclock-wise winding (a->b->c), which defines the front face (direction of normal).
+        Triangle(const Point3& a, const Point3& b, const Point3& c, std::shared_ptr<Material> material_ptr) 
+            : a(a), b(b), c(c), Object3D(material_ptr)
+        {
+            aabb.min_point.x() = std::min({ a.x(), b.x(), c.x() });
+            aabb.min_point.y() = std::min({ a.y(), b.y(), c.y() });
+            aabb.min_point.z() = std::min({ a.z(), b.z(), c.z() });
+            
+            aabb.max_point.x() = std::max({ a.x(), b.x(), c.x() });
+            aabb.max_point.y() = std::max({ a.y(), b.y(), c.y() });
+            aabb.max_point.z() = std::max({ a.z(), b.z(), c.z() });
+
+            normal = cross(b - a, c - a).normalized();
+        }
+            
+
+        // Compute the texture coordinate based on the hit point on the surface
+        Point2 get_textcoord(Point3 point)
+        {
+            return Point2();
+        }
+
+        bool intersect(Ray& ray, double tmin) override
+        {
+            double t = (b - ray.origin).dot(normal) / ray.direction.dot(normal);
+            Point3 p = ray.at(t);
+
+            // Determine if p is in the triangle
+            if (cross(b - a, p - a).dot(cross(b - a, c - a)) < 0) return false;  // ab, ap, ac
+            if (cross(c - a, p - a).dot(cross(c - a, b - a)) < 0) return false;  // ac, ap, ab
+            if (cross(c - b, p - b).dot(cross(c - b, a - b)) < 0) return false;  // bc, bp, ba
+
+            if (!(t > tmin && t < ray.get_hit_t())) {
+                return false;
+            }
+
+            // Has valid intersection
+            ray.set_hit_t(t);
+            ray.set_hit_normal(normal);
+            ray.set_hit_material(material_ptr);
+            ray.set_hit_textcoord(this->get_textcoord(ray.get_hit_point()));
+
+            return true;
+        }
+
+        Point3 a;
+        Point3 b;
+        Point3 c;
+
+        Vector3 normal;
+    };
+
+    //// Consists of a list of triangles
+    //class Mesh : public Object3D {
+    //    Mesh() = delete;
+
+    //    // With counterclock-wise winding (a->b->c), which defines the front face (direction of normal).
+    //    Mesh(std::vector<Triangle> triangles, std::shared_ptr<Material> material_ptr)
+    //        : triangles(triangles), Object3D(material_ptr)
+    //    {
+    //        for (size_t i = 0; i < triangles.size(); i++) {
+    //            aabb.merge(triangles[i].aabb);
+    //        }
+    //    }
+
+    //    Point2 get_textcoord(Point3 point)
+    //    {
+    //        return Point2();
+    //    }
+
+    //    bool intersect(Ray& ray, double tmin) override
+    //    {
+    //        bool intersected = false;
+
+    //        // Linear search all triangles
+    //        for (size_t i = 0; i < triangles.size(); i++) {
+    //            if (triangles[i].intersect(ray, tmin)) {
+    //                intersected = true;
+    //            }
+    //        }
+
+    //        return intersect;
+    //    }
+
+    //    std::vector<Triangle> triangles;
+    //};
+
+
+    // Consists of a list of triangles
+    struct Rectangle : public Object3D {
+        Rectangle() = delete;
+
+        // in counter-clock wise
+        Rectangle(const Point3& a, const Point3& b, const Point3& c, const Point3& d, std::shared_ptr<Material> material_ptr)
+            : Object3D(material_ptr), triangle1(Triangle(a, b, c, material_ptr)), triangle2(Triangle(c, d, a, material_ptr)) {}
+
+        Point2 get_textcoord(Point3 point)
+        {
+            return Point2();
+        }
+
+        bool intersect(Ray& ray, double tmin) override
+        {
+            bool intersected = false;
+
+            if (triangle1.intersect(ray, tmin)) {
+                intersected = true;
+            }
+
+            if (triangle2.intersect(ray, tmin)) {
+                intersected = true;
+            }
+
+            return intersected;
+        }
+
+        Triangle triangle1;
+        Triangle triangle2;
+    };
 }

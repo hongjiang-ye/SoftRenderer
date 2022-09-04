@@ -53,22 +53,18 @@ namespace SR
 		// Given a ray, return the color (amount of light) from the direction of that ray.
 		Color trace_ray(const Scene& scene, Ray& ray, double tmin, size_t cur_bounces) const
 		{
-			if (cur_bounces == max_bounces) {
-				// Giveup tracing when exceeding the max_bounce limit.
-				return Color{ 0, 0, 0 };
-			}
+			if (scene.intersect(ray, tmin)) {  // Intersect with an object
 
-			if (scene.intersect(ray, tmin)) {
-				// Intersect with an object, then trace the scattered ray
+				Color emittance = ray.get_hit_material()->get_emittance(ray);
 
 				auto scattered_ray_tuple = ray.get_hit_material()->generate_scatter_ray(ray);
-				if (!std::get<0>(scattered_ray_tuple))
+				if (!std::get<0>(scattered_ray_tuple) || cur_bounces == max_bounces)
 				{
-					// Has no valid sample scattered ray.
-					return Color{ 0, 0, 0 };
+					// Has no valid sample scattered ray or reach the trace limit, then stop tracing.
+					return emittance;
 				}
 				else {
-					return elementwise_multiply(std::get<2>(scattered_ray_tuple), trace_ray(scene, std::get<1>(scattered_ray_tuple), 
+					return emittance + elementwise_multiply(std::get<2>(scattered_ray_tuple), trace_ray(scene, std::get<1>(scattered_ray_tuple),
 						std::max(tmin, EPS), cur_bounces + 1));
 				}
 
@@ -77,7 +73,10 @@ namespace SR
 			}
 			else {
 				// Hits nothing, set background color
-				return Color{ 0.5, 0.7, 1.0 };
+				//return Color{ 0.5, 0.7, 1.0 };
+
+				// Hits nothing, return black.
+				return Color();
 			}
 		}
 
