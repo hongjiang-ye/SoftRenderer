@@ -91,7 +91,7 @@ std::pair<SR::Scene, SR::PinholeCamera> pinhole_setting2(size_t supersampling_fa
 std::pair<SR::Scene, SR::ThinLensCamera> thinlens_setting1(size_t supersampling_factor)
 {
     /* Settings for ThinLens Camera 1 */
-    size_t image_height = 180;  // resolution (xxP)
+    size_t image_height = 1080;  // resolution (xxP)
     size_t render_height = image_height * supersampling_factor;
 
     double sensor_width = 36;  // in unit mm, for convenience
@@ -110,7 +110,7 @@ std::pair<SR::Scene, SR::ThinLensCamera> thinlens_setting1(size_t supersampling_
 
     SR::ThinLensCamera camera(
         eye, lookat, { 0, 1, 0 },
-        sensor_width, sensor_height, render_height, focal_length, aperture_F_num, focal_plane_dist
+        sensor_width, sensor_height, render_height, focal_length, aperture_F_num, focus_right_dist
     );
     camera.print();
 
@@ -242,7 +242,7 @@ std::pair<SR::Scene, SR::PinholeCamera> cornell_box(size_t supersampling_factor)
 {
     /* Settings for Pinhole Camera */
     size_t image_height;
-    image_height = 180;
+    image_height = 360;
     //image_height = 60;
     double aspect_ratio = 1.0 / 1.0;
     size_t image_width = static_cast<size_t>(std::round(image_height * aspect_ratio));
@@ -262,7 +262,7 @@ std::pair<SR::Scene, SR::PinholeCamera> cornell_box(size_t supersampling_factor)
     auto white_wall = std::make_shared<SR::Lambertian>(SR::Color{ 1, 1, 1 });
     auto red_wall = std::make_shared<SR::Lambertian>(SR::Color{ 1, 0, 0 });
     auto green_wall = std::make_shared<SR::Lambertian>(SR::Color{ 0, 1, 0 });
-    auto light = std::make_shared<SR::Lambertian>(SR::Color(), SR::Color{ 1.0, 1.0, 1.0});
+    auto light = std::make_shared<SR::Lambertian>(SR::Color(), SR::Color{ 10.0, 10.0, 10.0 });
 
     auto material_left = std::make_shared<SR::Dielectric>(1.5);
     auto material_right = std::make_shared<SR::Metal>(SR::Vector3d{ 1.0, 1.0, 1.0 }, 0.0);
@@ -272,33 +272,45 @@ std::pair<SR::Scene, SR::PinholeCamera> cornell_box(size_t supersampling_factor)
     //auto center_ball = std::make_shared<SR::Dielectric>(1.5);
 
     scene.add_object(std::make_shared<SR::Rectangle>(
-        SR::Point3{ 549.6, 0.0, 559.2 }, SR::Point3{ 0.0, 0.0, 559.2 },
-        SR::Point3{ 0.0, 0.0,   0.0 }, SR::Point3{ 552.8, 0.0,   0.0 },
+        SR::Point3{ 552.8, 0.0,   0.0 },
+        SR::Point3{ 0.0, 0.0,   0.0 }, 
+        SR::Point3{ 0.0, 0.0, 559.2 },
+        SR::Point3{ 549.6, 0.0, 559.2 }, 
         white_wall));  // Floor
 
     scene.add_object(std::make_shared<SR::Rectangle>(
-        SR::Point3{ 213.0, 548.8, 227.0 }, SR::Point3{ 213.0, 548.8, 332.0 },
-        SR::Point3{ 343.0, 548.8, 332.0 }, SR::Point3{ 343.0, 548.8, 227.0 },
+        SR::Point3{ 343.0, 548.7, 227.0 },
+        SR::Point3{ 343.0, 548.7, 332.0 }, 
+        SR::Point3{ 213.0, 548.7, 332.0 },
+        SR::Point3{ 213.0, 548.7, 227.0 }, 
         light));  // Light
      
     scene.add_object(std::make_shared<SR::Rectangle>(
-        SR::Point3{ 0.0, 548.8,   0.0 }, SR::Point3{ 0.0, 548.8, 559.2 },
-        SR::Point3{ 556.0, 548.8, 559.2 }, SR::Point3{ 556.0, 548.8, 0.0 },
+        SR::Point3{ 556.0, 548.8, 0.0 },
+        SR::Point3{ 556.0, 548.8, 559.2 }, 
+        SR::Point3{ 0.0, 548.8, 559.2 },
+        SR::Point3{ 0.0, 548.8,   0.0 }, 
         white_wall));  // Ceiling
 
     scene.add_object(std::make_shared<SR::Rectangle>(
-        SR::Point3{ 556.0, 548.8, 559.2 }, SR::Point3{ 0.0, 548.8, 559.2 },
-        SR::Point3{ 0.0,   0.0, 559.2 }, SR::Point3{ 549.6,   0.0, 559.2 },
+        SR::Point3{ 549.6,   0.0, 559.2 },
+        SR::Point3{ 0.0,   0.0, 559.2 }, 
+        SR::Point3{ 0.0, 548.8, 559.2 },
+        SR::Point3{ 556.0, 548.8, 559.2 }, 
         white_wall));  // Back wall
 
     scene.add_object(std::make_shared<SR::Rectangle>(
-        SR::Point3{ 0.0, 548.8, 559.2 }, SR::Point3{ 0.0, 548.8,   0.0 },
-        SR::Point3{ 0.0,   0.0,   0.0 }, SR::Point3{ 0.0,   0.0, 559.2 },
+        SR::Point3{ 0.0,   0.0, 559.2 },
+        SR::Point3{ 0.0,   0.0,   0.0 }, 
+        SR::Point3{ 0.0, 548.8,   0.0 },
+        SR::Point3{ 0.0, 548.8, 559.2 }, 
         green_wall));  // Right wall
 
     scene.add_object(std::make_shared<SR::Rectangle>(
-        SR::Point3{ 556.0, 548.8,   0.0 }, SR::Point3{ 556.0, 548.8, 559.2 },
-        SR::Point3{ 549.6,   0.0, 559.2 }, SR::Point3{ 552.8,   0.0,   0.0 },
+        SR::Point3{ 552.8,   0.0,   0.0 },
+        SR::Point3{ 549.6,   0.0, 559.2 }, 
+        SR::Point3{ 556.0, 548.8, 559.2 },
+        SR::Point3{ 556.0, 548.8,   0.0 }, 
         red_wall)); // Left wall
 
     scene.add_object(std::make_shared<SR::Sphere>(SR::Vector3d{ 212.5, 82.5, 147.5 }, 82.5, right_ball));
@@ -310,8 +322,8 @@ std::pair<SR::Scene, SR::PinholeCamera> cornell_box(size_t supersampling_factor)
 
 int main()
 {
-    size_t max_bounces = 50;
-    size_t samples_per_pixel = 100;
+    size_t max_bounces = 100;
+    size_t samples_per_pixel = 10000;
     SR::PathTracer renderer(max_bounces, samples_per_pixel);
 
     size_t supersampling_factor = 2;  // factor x factor subpixels

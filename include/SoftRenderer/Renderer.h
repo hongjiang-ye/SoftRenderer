@@ -93,7 +93,7 @@ namespace SR
 				std::cout << "\rScanlines remaining: " << std::setw(5) << height - j 
 					<< " (Progress: " << std::fixed << std::setprecision(1) << static_cast<double>(j) / height * 100.0 << "%)" << std::flush;
 
-                #pragma omp parallel for schedule(dynamic, 4)
+                #pragma omp parallel for schedule(dynamic, 1)
 				for (int i = 1; i <= width; i++) {
 
 					Color color = { 0, 0, 0 };

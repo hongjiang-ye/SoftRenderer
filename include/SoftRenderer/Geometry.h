@@ -181,9 +181,12 @@ namespace SR
 
         AABoundingBox()
         {
-            // Initialized to be an infinite large bbox.
-            min_point = Point3{ DOUBLE_NEG_INFINITY, DOUBLE_NEG_INFINITY , DOUBLE_NEG_INFINITY };
-            max_point = Point3{ DOUBLE_POS_INFINITY, DOUBLE_POS_INFINITY , DOUBLE_POS_INFINITY };
+            // Initialized to be an invalid bbox;
+            //min_point = { DOUBLE_POS_INFINITY, DOUBLE_POS_INFINITY, DOUBLE_POS_INFINITY };
+            //max_point = { DOUBLE_NEG_INFINITY, DOUBLE_NEG_INFINITY, DOUBLE_NEG_INFINITY };
+
+            max_point = { DOUBLE_POS_INFINITY, DOUBLE_POS_INFINITY, DOUBLE_POS_INFINITY };
+            min_point = { DOUBLE_NEG_INFINITY, DOUBLE_NEG_INFINITY, DOUBLE_NEG_INFINITY };
         }
 
         AABoundingBox(const Point3& min_point, const Point3& max_point)
@@ -395,14 +398,15 @@ namespace SR
         Triangle(const Point3& a, const Point3& b, const Point3& c, std::shared_ptr<Material> material_ptr) 
             : a(a), b(b), c(c), Object3D(material_ptr)
         {
-            aabb.min_point.x() = std::min({ a.x(), b.x(), c.x() });
-            aabb.min_point.y() = std::min({ a.y(), b.y(), c.y() });
-            aabb.min_point.z() = std::min({ a.z(), b.z(), c.z() });
+            aabb.min_point.x() = std::min({ a.x(), b.x(), c.x() }) - 0.001;
+            aabb.min_point.y() = std::min({ a.y(), b.y(), c.y() }) - 0.001;
+            aabb.min_point.z() = std::min({ a.z(), b.z(), c.z() }) + 0.001;
             
-            aabb.max_point.x() = std::max({ a.x(), b.x(), c.x() });
-            aabb.max_point.y() = std::max({ a.y(), b.y(), c.y() });
-            aabb.max_point.z() = std::max({ a.z(), b.z(), c.z() });
+            aabb.max_point.x() = std::max({ a.x(), b.x(), c.x() }) + 0.001;
+            aabb.max_point.y() = std::max({ a.y(), b.y(), c.y() }) + 0.001;
+            aabb.max_point.z() = std::max({ a.z(), b.z(), c.z() }) + 0.001;
 
+            //cout << "Tri AABB: " << aabb << endl;
             normal = cross(b - a, c - a).normalized();
         }
             
@@ -483,9 +487,20 @@ namespace SR
     struct Rectangle : public Object3D {
         Rectangle() = delete;
 
-        // in counter-clock wise
+        // a->b->c->d in counter-clock wise
         Rectangle(const Point3& a, const Point3& b, const Point3& c, const Point3& d, std::shared_ptr<Material> material_ptr)
-            : Object3D(material_ptr), triangle1(Triangle(a, b, c, material_ptr)), triangle2(Triangle(c, d, a, material_ptr)) {}
+            : Object3D(material_ptr), a(a), b(b), c(c), d(d)
+        {
+            aabb.min_point.x() = std::min({ a.x(), b.x(), c.x(), d.x() }) - 0.001;
+            aabb.min_point.y() = std::min({ a.y(), b.y(), c.y(), d.y() }) - 0.001;
+            aabb.min_point.z() = std::min({ a.z(), b.z(), c.z(), d.z() }) - 0.001;
+
+            aabb.max_point.x() = std::max({ a.x(), b.x(), c.x(), d.x() }) + 0.001;
+            aabb.max_point.y() = std::max({ a.y(), b.y(), c.y(), d.y() }) + 0.001;
+            aabb.max_point.z() = std::max({ a.z(), b.z(), c.z(), d.z() }) + 0.001;
+
+            normal = cross(b - d, c - a).normalized();
+        }
 
         Point2 get_textcoord(Point3 point)
         {
@@ -494,20 +509,31 @@ namespace SR
 
         bool intersect(Ray& ray, double tmin) override
         {
-            bool intersected = false;
+            double t = (b - ray.origin).dot(normal) / ray.direction.dot(normal);
+            Point3 p = ray.at(t);
 
-            if (triangle1.intersect(ray, tmin)) {
-                intersected = true;
+            // Determine if p is in the rectangle (whether is between AB & CD, and AD & BC
+            if (cross(b - a, p - a).dot(cross(p - d, c - d)) < 0) return false;  // (AB X AP) * (DP X DC) >= 0
+            if (cross(a - d, p - d).dot(cross(p - c, b - c)) < 0) return false;  // (DA X DP) * (CP X CB) >= 0
+
+            if (!(t > tmin && t < ray.get_hit_t())) {
+                return false;
             }
 
-            if (triangle2.intersect(ray, tmin)) {
-                intersected = true;
-            }
+            // Has valid intersection
+            ray.set_hit_t(t);
+            ray.set_hit_normal(normal);
+            ray.set_hit_material(material_ptr);
+            ray.set_hit_textcoord(this->get_textcoord(ray.get_hit_point()));
 
-            return intersected;
+            return true;
         }
 
-        Triangle triangle1;
-        Triangle triangle2;
+        Point3 a;
+        Point3 b;
+        Point3 c;
+        Point3 d;
+
+        Vector3 normal;
     };
 }
