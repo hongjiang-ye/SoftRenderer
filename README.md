@@ -2,10 +2,6 @@
 
 A path tracer written in C++ with no third-party library support.
 
-## Results
-
-
-
 ## Features
 
 **Geometry**
@@ -47,3 +43,25 @@ A path tracer written in C++ with no third-party library support.
     Vector3f vec = {1, 2, 3};
     cout << mat * vec << endl;
     ```
+
+## Results
+
+### Path Tracing
+
+The Cornell box:
+
+
+
+### Thin-lens camera model
+
+Shoot with 36mm x 24mm full frame, focal length 26mm, aperture F1.6; focusing on the sphere in the middle:
+
+<img src="https://s3.bmp.ovh/imgs/2022/09/06/ff2d80358def9372.png" style="zoom: 50%;" />
+
+Now change focus to the right sphere:
+
+<img src="https://s3.bmp.ovh/imgs/2022/09/06/9ec67ec81d31c902.png" style="zoom: 50%;" />
+
+Change focus to the left sphere:
+
+<img src="https://s3.bmp.ovh/imgs/2022/09/06/4a745553fe195f0e.png" style="zoom: 50%;" />

@@ -322,7 +322,7 @@ std::pair<SR::Scene, SR::PinholeCamera> cornell_box(size_t supersampling_factor)
 
 int main()
 {
-    size_t max_bounces = 100;
+    size_t max_bounces = 10;
     size_t samples_per_pixel = 10000;
     SR::PathTracer renderer(max_bounces, samples_per_pixel);
 
