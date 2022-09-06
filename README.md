@@ -50,18 +50,18 @@ A path tracer written in C++ with no third-party library support.
 
 The Cornell box:
 
-![cornell_box](C:\Users\yhj\Desktop\SoftRenderer\results\cornell_box.png)
+![cornell_box](results\cornell_box.png)
 
 ### Thin-lens camera model
 
 Shoot with 36mm x 24mm full frame, focal length 26mm, aperture F1.6; focusing on the sphere in the middle:
 
-<img src="C:\Users\yhj\Desktop\SoftRenderer\results\thinlen_focus_mid.png" alt="thinlen_focus_mid" style="zoom: 33%;" />
+<img src="results\thinlen_focus_mid.png" alt="thinlen_focus_mid" style="zoom: 33%;" />
 
 Now change focus to the right sphere:
 
-<img src="C:\Users\yhj\Desktop\SoftRenderer\results\thinlen_focus_right.png" alt="thinlen_focus_right" style="zoom: 33%;" />
+<img src="results\thinlen_focus_right.png" alt="thinlen_focus_right" style="zoom: 33%;" />
 
 Change focus to the left sphere:
 
-<img src="C:\Users\yhj\Desktop\SoftRenderer\results\thinlen_focus_left.png" alt="thinlen_focus_left" style="zoom:33%;" />
+<img src="results\thinlen_focus_left.png" alt="thinlen_focus_left" style="zoom:33%;" />
