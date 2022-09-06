@@ -50,7 +50,7 @@ A path tracer written in C++ with no third-party library support.
 
 The Cornell box:
 
-![cornell_box](results\cornell_box.png)
+<img src="results\cornell_box.png" alt="cornell_box"  />
 
 ### Thin-lens camera model
 
